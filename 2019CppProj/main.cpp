@@ -1,4 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
+#pragma comment (lib, "libmysql.lib")
 
 #include <iostream>
 #include <time.h> 
@@ -6,19 +7,20 @@
 #include <Windows.h>
 #include <stdio.h>
 #include <conio.h>
-#include "Render.cpp"
+
+#include "Lender.cpp"
 #include "Manager.cpp"
+#define USER "root"				//유저 이름
+#define PASSWORD "mirim2"		//비밀번호
+#define HOST "localhost"
 using namespace std;
 
 class main_screen {
-	string user_id[10];
-	string user_pw[10];
-	string user_name[10];
 	int c = 0;
-	int type[10];
 	int sign_user_num;
 
 public:
+	char id[20];
 	int x, y;
 	int cho = 0;
 	void draw_background() {
@@ -136,9 +138,9 @@ public:
 		}
 	}
 	int sign_up() {
-		string id;
-		string password;
-		string name;
+		char id[10];
+		char password[10];
+		char name[10];
 		int t;
 		draw_background();
 		x = 23, y = 9;
@@ -161,33 +163,31 @@ public:
 		gotoxy(x, y);
 		cout << "관리자 : 1 / 대여자 : 2 >> ";
 		cin >> t;
+
+		MYSQL * cons = mysql_init(NULL);
+		DB insert(HOST,cons);
 		
-		for (int i = 0; i < c; i++) {
-			if (id == user_id[i]) {
-				y += 2;
-				gotoxy(x, y);
-				cout << "!!이미 가입된 아이디입니다!!";
-				system("pause");
-				return 0;
-			}
+		if (insert.insertspl(HOST, cons, id, password, t, name)) {
+			y += 2;
+			gotoxy(x, y);
+			cout << "회원가입이 성공적으로 완료되었습니다!";
+			y += 2;
+			gotoxy(x, y);
+			system("pause");
+			return 0;
 		}
-		user_id[c] = id;
-		user_pw[c] = password;
-		type[c] = t;
-		user_name[c] = name;
-		c++;
-		y += 2;
-		gotoxy(x, y);
-		cout << "회원가입이 성공적으로 완료되었습니다!";
-		y += 2;
-		gotoxy(x, y);
-		system("pause");
-		return 0;
+		else {
+			y += 2;
+			gotoxy(x, y);
+			cout << "!!이미 가입된 아이디입니다!!";
+			system("pause");
+			return 0;
+		}
 	}
 
 	int sign_in() {
-		string id;
-		string password;
+		
+		char password[20];
 		system("cls");
 		draw_background();
 		
@@ -204,45 +204,44 @@ public:
 		gotoxy(x, y);
 		cout << "비밀번호 >> ";
 		cin >> password;
-		for (int i = 0; i < c; i++) {
-			if (id == user_id[i]) {
-				if (password == user_pw[i]) {
-					sign_user_num = i;
-					y += 2;
-					gotoxy(x, y);
-					cout << "!! 로그인 성공 !!" << endl;
-					y += 2;
-					gotoxy(x, y);
-					system("pause");
-					if (type[i] == 1) { //관리자
-						return 1;
-					}
-					else {//대여자
-						return 2;
-					}
-				}
-				else {
-					y += 2;
-					gotoxy(x, y);
-					cout << "!! 비밀번호가 틀렸습니다 !!" << endl;
-					y += 2;
-					gotoxy(x, y);
-					system("pause");
-					return 0;
-				}
-			}
+		
+		MYSQL * cons = mysql_init(NULL);
+		DB search(HOST,cons);
+		int userType;
+		int result=search.login_sql(HOST, cons, id,password,userType);
+
+		if (result==2) {//패스워드까지 맞으면
+			y += 2;
+			gotoxy(x, y);
+			cout << "!! 로그인 성공 !!" << endl;
+			y += 2;
+			gotoxy(x, y);
+			system("pause");
+			return userType;
+
 		}
-		y += 2;
-		gotoxy(x, y);
-		cout << "아이디가 존재하지 않습니다" << endl;
-		y += 2;
-		gotoxy(x, y);
-		system("pause");
+		else if(result==1){
+			y += 2;
+			gotoxy(x, y);
+			cout << "!! 비밀번호가 틀렸습니다 !!" << endl;
+			y += 2;
+			gotoxy(x, y);
+			system("pause");
+			return 0;
+		}
+		else if(result==0) {
+			y += 2;
+			gotoxy(x, y);
+			cout << "아이디가 존재하지 않습니다" << endl;
+			y += 2;
+			gotoxy(x, y);
+			system("pause");
+			return 0;
+		}
+
 		return 0;
 	}
-	string get_user_name() {
-		return user_name[sign_user_num];
-	}
+	
 	void draw_umbrella() {
 		x = 35, y = 1;
 		for (int j = 0; j < 9; j++) {
@@ -289,6 +288,9 @@ public:
 		cout << "   ▨▨▨  ▨  ▨  ▨  ▨▨▨  ▨   ▨  ▨▨▨  ▨▨▨ ▨▨▨ ▨    ▨" << endl;
 
 	}
+	char* get_id() {
+		return id;
+	}
 };
 
 
@@ -296,10 +298,9 @@ int main() {
 	main_screen main;
 	
 	while (1) {
-		int i = main.choice_sign();
-		if (i == 2) {
-			Render person;
-			person.person_choice(main.get_user_name());
+		int i = main.choice_sign(); //1 - 관리자 2 - 대여자
+		if (i == 2) { 
+			Lender person(main.get_id());
 		}
 		else if (i == 1) {
 			Manager Mperson;
