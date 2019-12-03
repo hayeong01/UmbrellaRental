@@ -31,11 +31,13 @@ public:
 		}
 	}
 
-	MYSQL_RES* select_sql(const char mysqlip[], MYSQL *cons,int type,int lendok) {
+	MYSQL_RES* select_sql(const char mysqlip[], MYSQL *cons,int type,int lendok,int return1) {
 		char s[200];//sql문 넣을거
 		MYSQL_RES *res;
 
-		sprintf_s(s, 200, "select * from user where type=%d and lendok=%d; ",type,lendok);
+		if(return1==-1)
+			sprintf_s(s, 200, "select * from user where type=%d and lendok=%d; ",type,lendok);
+		else  sprintf_s(s, 200, "select * from user where type=%d and lendok=%d and return1=%d; ", type, lendok,return1);
 
 		if (mysql_query(cons, s))// 테이블의 모든 레코드 선택
 		{
@@ -55,7 +57,8 @@ class Manager {
 public:
 	int x, y;
 	int cho;
-	void ShowAllRental() {
+	int ShowAllRental() {
+		MYSQL_RES* res;
 		while (true) {
 			system("cls");
 			draw_background();
@@ -65,7 +68,7 @@ public:
 
 			MYSQL * cons = mysql_init(NULL);
 			DB2 all(HOST, cons);
-			MYSQL_RES* res = all.select_sql(HOST, cons,2,2);
+			res = all.select_sql(HOST, cons,2,2,0);
 			MYSQL_ROW row;
 			int returnYear, returnMonth, returnDate;
 
@@ -74,7 +77,7 @@ public:
 			int count = 0;
 
 			int fields = mysql_num_fields(res); // 필드 갯수 구함
-			x = 10, y = 12;
+			x = 8, y = 12;
 			while (row = mysql_fetch_row(res)) // 한 행을 구함
 			{
 				int day = atoi(row[4]);//캐릭터를 인트형으로
@@ -90,7 +93,7 @@ public:
 				
 				
 				gotoxy(x, y);
-				cout << "아이디 : " << row[0] << "   이름 : " << row[1] << "  대여기간 : " << row[2] << "년" << row[3] << "월" << row[4] << "일 ~ " << returnYear << "년" << returnMonth << "월" << returnDate << "일";
+				cout << row[0] << " "<< row[1] << "  대여기간 : " << row[2] << "년" << row[3] << "월" << row[4] << "일 ~ " << returnYear << "년" << returnMonth << "월" << returnDate << "일";
 				
 				count++;
 				y++;
@@ -111,69 +114,170 @@ public:
 			switch (cho) {
 			case 1: ReturnUmb(); break;
 			case 2:	PlusDay_Accept(); break;
-			case 3: return;  break;
+			case 3: return 0;  break;
 			}
 			if (count == 0)cout << "대여된 우산이 없습니다.";
 		}
 	}
 	void RentalApply_Accept() {
-		system("cls");
-		draw_background();
 
 		MYSQL * cons = mysql_init(NULL);
 		DB2 apply(HOST, cons);
-		MYSQL_RES* res = apply.select_sql(HOST, cons, 2, 1);
+		MYSQL_RES* res;
 		MYSQL_ROW row;
 		int returnYear, returnMonth, returnDate;
 
 		time_t timer;
 		struct tm t;
 		int count = 1;
-		int selectNum;
+		int selectNum=0;
 
-		int fields = mysql_num_fields(res); // 필드 갯수 구함
-		x = 10, y = 12;
-		while (row = mysql_fetch_row(res)) // 한 행을 구함
-		{
-			int day = atoi(row[4]);//캐릭터를 인트형으로
-			int check = atoi(row[6]);
+		while (1) {
+			system("cls");
+			draw_background();
 
-			if (check == 0) timer = time(NULL) + 7 * (24 * 60 * 60);//plusDay를 체크해서 연장신청을 안했으면 0, 했으면 else로 한다
-			else timer = time(NULL) + 14 * (24 * 60 * 60);
+			res = apply.select_sql(HOST, cons, 2, 1,-1);
 
-			localtime_s(&t, &timer);//현재시간 구하는 것
-			returnYear = t.tm_year + 1900;
-			returnMonth = t.tm_mon + 1;
-			returnDate = t.tm_mday;
+			count = 1;
+			int fields = mysql_num_fields(res); // 필드 갯수 구함
+			x = 10, y = 12;
+			while (row = mysql_fetch_row(res)) // 한 행을 구함
+			{
+				int day = atoi(row[4]);//캐릭터를 인트형으로
+				int check = atoi(row[6]);
+
+				if (check == 0) timer = time(NULL) + 7 * (24 * 60 * 60);//plusDay를 체크해서 연장신청을 안했으면 0, 했으면 else로 한다
+				else timer = time(NULL) + 14 * (24 * 60 * 60);
+
+				localtime_s(&t, &timer);//현재시간 구하는 것
+				returnYear = t.tm_year + 1900;
+				returnMonth = t.tm_mon + 1;
+				returnDate = t.tm_mday;
 
 
-			gotoxy(x, y);
-			
-			cout << count<<". 이름 : " << row[1] << "  대여기간 : " << row[2] << "년" << row[3] << "월" << row[4] << "일 ~ " << returnYear << "년" << returnMonth << "월" << returnDate << "일";
+				gotoxy(x, y);
 
-			count++;
-			y++;
-		}
+				cout << row[0] << " " << row[1] << "  대여기간 : " << row[2] << "년" << row[3] << "월" << row[4] << "일 ~ " << returnYear << "년" << returnMonth << "월" << returnDate << "일";
 
-		y += 3;
-		gotoxy(x, y);
-		cout << "대여 수락할 번호를 입력하세요 >>";
-		cin >> selectNum;
-
-		count = 1;
-		while (row = mysql_fetch_row(res)) // 한 행을 구함
-		{
-			if (count == selectNum) {
-				
+				count++;
+				y++;
 			}
-			count++;
+			if (count == 1) {// while문 안에 들어가지 않았을 때
+				gotoxy(x, y);
+				cout << "대여 신청한 사람이 없습니다.";
+
+				y += 3;
+				gotoxy(x, y);
+				system("pause");
+				break;
+			}
+
+			y += 3;
+			gotoxy(x, y);
+			char selectID[20];
+			cout << "대여 수락할 학생의 학번을 입력하세요 >>";
+			cin >> selectID;
+
+			char s[200];//sql문 넣을거
+			
+			sprintf_s(s, 100, "UPDATE user SET lendok=2 WHERE Id = %s;", selectID);
+
+			if (mysql_query(cons, s)) {
+				fprintf(stderr, "%s\n", mysql_error(cons));
+				mysql_close(cons);
+			}
+			y += 2;
+			gotoxy(x, y);
+			cout << " 대여 신청을 수락했습니다.";
+
+			y += 2;
+			gotoxy(x, y);
+			cout << "계속 대여 신청을 수락하고 싶다면 1, 뒤로 가기는 2를 입력해주세요 >>";
+			cin >> selectNum;
+
+			if (selectNum == 1) continue;
+			else if (selectNum == 2) break;
+		}
+	}
+	void ReturnUmb() {  
+		MYSQL * cons = mysql_init(NULL);
+		DB2 all(HOST, cons);
+		MYSQL_RES* res;
+		MYSQL_ROW row;
+		int returnYear, returnMonth, returnDate;
+
+		time_t timer;
+		struct tm t;
+		int count = 1;
+		int selectNum=0;
+
+		while (1) {
+			system("cls");
+			draw_background();
+
+			res = all.select_sql(HOST, cons, 2, 2,0);
+			gotoxy(32, 6);
+			cout << "****** 우산 반납 관리 ******";
+
+			int fields = mysql_num_fields(res); // 필드 갯수 구함
+			x = 8, y = 12;
+			while (row = mysql_fetch_row(res)) // 한 행을 구함
+			{
+				int day = atoi(row[4]);//캐릭터를 인트형으로
+				int check = atoi(row[6]);
+
+				if (check == 0) timer = time(NULL) + 7 * (24 * 60 * 60);//plusDay를 체크해서 연장신청을 안했으면 0, 했으면 else로 한다
+				else timer = time(NULL) + 14 * (24 * 60 * 60);
+
+				localtime_s(&t, &timer);//현재시간 구하는 것
+				returnYear = t.tm_year + 1900;
+				returnMonth = t.tm_mon + 1;
+				returnDate = t.tm_mday;
+
+
+				gotoxy(x, y);
+				cout << row[0] << " " << row[1] << "  대여기간 : " << row[2] << "년" << row[3] << "월" << row[4] << "일 ~ " << returnYear << "년" << returnMonth << "월" << returnDate << "일";
+
+				count++;
+				y++;
+			}
+			if (count == 1) {// while문 안에 들어가지 않았을 때
+				gotoxy(x, y);
+				cout << "대여된 우산이 없습니다.";
+
+				y += 3;
+				gotoxy(x, y);
+				system("pause");
+				break;
+			}
+
+			y += 3;
+			gotoxy(x, y);
+			char selectID[20];
+			cout << "우산 반납 처리할 학생의 학번을 입력하세요 >>";
+			cin >> selectID;
+
+			char s[200];//sql문 넣을거
+
+			sprintf_s(s, 100, "UPDATE user SET return1=1 WHERE Id = %s;", selectID);
+
+			if (mysql_query(cons, s)) {
+				fprintf(stderr, "%s\n", mysql_error(cons));
+				mysql_close(cons);
+			}
+			y += 2;
+			gotoxy(x, y);
+			cout << " 우산 반납을 완료했습니다. ";
+
+			y += 2;
+			gotoxy(x, y);
+			cout << "계속 우산 반납 관리를 하고 싶다면 1, 뒤로 가기는 2를 입력해주세요 >>";
+			cin >> selectNum;
+
+			if (selectNum == 1) continue;
+			else return;
 		}
 
-		system("pause");
-	}
-	void ReturnUmb() {
-		system("cls");
-		draw_background();
 	}
 	void PlusDay_Accept() {
 		system("cls");
