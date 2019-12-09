@@ -175,7 +175,7 @@ public:
 			break;
 
 		case 3://우산대여 현황
-			sprintf_s(s, 100, "select *from user where return1 =0 && id = %s", id);
+			sprintf_s(s, 100, "select *from user where lendok=2&&return1 =0 && id = %s", id);
 			break;
 		}
 

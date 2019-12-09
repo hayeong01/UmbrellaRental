@@ -10,7 +10,7 @@
 
 #include "Lender.cpp"
 #include "Manager.cpp"
-#define USER "root"				//유저 이름
+#define USER "root"				//유저 이름 
 #define PASSWORD "mirim2"		//비밀번호
 #define HOST "localhost"
 
@@ -339,7 +339,7 @@ public:
 
 
 int main() {
-	system("mode con cols=80 lines=36");
+	system("mode con cols=80 lines=46");
 	main_screen main;
 	
 	while (1) {

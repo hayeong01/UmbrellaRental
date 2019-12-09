@@ -28,7 +28,7 @@
 #define WHITE 15 
 
 using namespace std;
-class DB2 {
+class DB2{
 public:
 	DB2(const char mysqlip[], MYSQL *cons) {
 		if (cons == NULL)
