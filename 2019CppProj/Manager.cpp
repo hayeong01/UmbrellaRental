@@ -372,7 +372,7 @@ public:
 		int key;
 		do {
 			key = _getch();
-			move_arrow_key(key, 43, 22);
+			move_arrow_key(key);
 		} while (key != 32);
 	}
 
@@ -386,7 +386,7 @@ public:
 
 	}
 
-	void move_arrow_key(char key, int x_b, int y_b) {
+	void move_arrow_key(char key) {
 		switch (key) {
 		case 72://À§
 			if (y > 25) {
